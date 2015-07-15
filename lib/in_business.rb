@@ -1,4 +1,5 @@
 require 'ostruct'
+require 'active_support'
 require 'active_support/core_ext'
 require 'active_support/concern'
 
@@ -39,14 +40,12 @@ module InBusiness
       return false if is_holiday? datetime
 
       # If we don't know the opening hours for datetime's day, assume we're closed
-      return false unless hours.send(days[datetime.wday.to_s].to_sym)
+      hours_ranges = hours.send(days[datetime.wday.to_s].to_sym)
+      return false unless hours_ranges
 
       # We have opening hours, so check if the current time is within them
-      if !hours.send(days[datetime.wday.to_s].to_sym).cover? datetime.strftime("%H:%M")
-        return false
-      end
-
-      true # It's not not open, so it must be open ;)
+      hours_ranges = [hours_ranges] unless hours_ranges.is_a? Array
+      hours_ranges.any? {|hours| hours.cover? datetime.strftime("%H:%M")}
     end
 
     def closed?(datetime=DateTime.now)
